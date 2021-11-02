@@ -15,9 +15,9 @@ The script takes:
 (6) Directory of barcode-deduped bams for control cohort 1<br /> 
 (7) Directory of samtools-deduped bams for control cohort 1<br /> 
 (8) Directory of barcode-deduped bams for control cohort 2<br /> 
-(9) Directory of samtools-deduped bams for control cohort 2<br /> 
-(10) Path to the annotation file (format: 4-column bed file with header as: "#chr"    "start"   "end"     "name")<br />  
-(11) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br /> 
+(9) Directory of samtools-deduped bams for control cohort 2<br />
+(10) Path to the annotation file (format: 4-column bed file with header as: "#chr"    "start"   "end"     "name")<br />
+(11) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
 (12) Off-target bin size (optional- default: 100kb)<br /> 
 (13) Path to targeted background for control cohort 1 (required **if 6 is not provided**)<br /> 
 (14) Path to off-target background for control cohort 1 (required **if 7 is not provided**)<br /> 
