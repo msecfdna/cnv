@@ -24,11 +24,10 @@ from scipy.stats import randint
 import matplotlib.pyplot as plt
 from cnv_plots import *
 import scipy.signal as signal
-
 # we first open a bed file for the selector (on-target)
 # a set of fixed regions for the off-target-
 
-def sample_cov_base(bamname,bedname,bedfile, genome_size,mapq=30):
+def sample_cov_base(bamname,bedname,bedfile, genome_size,mapq=20):
     outname = re.sub('.bam', '.base.coverage', bamname, count=1)
     command_str = "samtools view " + bamname + " -q "+str(mapq) 
     command_str = command_str + " | awk '{if ($2==99 || $2==163) print $3\"\t\"$4-1\"\t\"$4+$9}' | bedtools intersect -a stdin -b  " + bedfile + "   "
@@ -60,7 +59,7 @@ def padd_selector(bedname,paddsize,outdir):
     commandstr = "cat "+bedname + " | awk '{print $1\"\t\"$2-500\"\t\"$3+500}' | bedtools merge -i stdin | bedtools sort -i stdin > "+paddedname
     subprocess.run(commandstr,shell=True)
     return(paddedname)
-def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000): # Coverage across bins [non-baselevel] 
+def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000,mapq = 20): # Coverage across bins [non-baselevel] 
     # *** This function expects 7 columns with a 4th column with name for the region to aggregate on! 
     dat = pd.read_csv(binbed,sep="\t",header="infer") 
     dat = dat.set_axis(['#chr', 'start', 'end','gc'], axis=1, inplace=False)
@@ -69,7 +68,6 @@ def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000): # Covera
     #beddat = pd.read_csv(bedname,sep="\t",header="infer",skiprows=1) open(bedname)
     outname = re.sub('.bam', '.bin.coverage', bamname, count=1)
     outname_temp = re.sub('.bam', '.bin.coverage.temp', bamname, count=1)
-    mapq = 20 # Minimum mapping quality to consider. 
     cc = 0
     #lines =  f.readlines()[1:]
     for ch in chrs:
@@ -162,27 +160,24 @@ def files_in_dir(srchdir, str2srch = ".bam"):
     return(files)
 
 def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
-    ## For this part, we do find the median using automal regions only. 
-    from scipy.interpolate import interp1d
-    import statsmodels.api as sm
     lowess = sm.nonparametric.lowess
     dat = pd.read_csv(covfile,sep="\t") 
     chrs = dat.iloc[:,0]
-    
     y = dat.iloc[:,4]+0.1
     zerocov = np.where(y<=(minFCov+0.1)) # where are the regions with less than N fragments! 
     if autosome:
         y = y / np.nanmedian(y[np.invert(chrs.isin(["chrX","chrY"]))])
     else:
         y = y / np.nanmedian(y)
-    
     x = dat.iloc[:,3]
     x_autosome = x[np.invert(chrs.isin(["chrX","chrY"]))]
-    y_autosome = y[np.invert(chrs.isin(["chrX","chrY"]))]
-    zerocov_autosome = zerocov[np.invert(chrs.isin(["chrX","chrY"]))]
+    y_autosome =  y[np.invert(chrs.isin(["chrX","chrY"]))]
+    zerocov_autosome = np.array(np.intersect1d(zerocov,np.where(np.invert(chrs.isin(["chrX","chrY"])))))
     ylog = np.log(y)
-    del y_autosome[zerocov]
-    del x_autosome[zerocov]
+    for index in sorted(list(zerocov_autosome),reverse=True):
+        del y_autosome[index]
+    for index in sorted(list(zerocov_autosome),reverse=True):
+        del x_autosome[index]
     ylog_autosome = np.log(y_autosome)
     order=np.argsort(x_autosome)
     ylog_ordered = ylog_autosome.iloc[order]
@@ -190,17 +185,14 @@ def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
     ylog_rolled = ylog_ordered.rolling(15,min_periods=3).median()
     x_rolled = x_ordered.rolling(15,min_periods=3).median()
     z = lowess(ylog_rolled, x_rolled, frac= lowess_frac)
-    #lowess_x = list(zip(*z))[0]
-    #lowess_y = list(zip(*z))[1]
     f = np.interp(x, z[:,0], z[:,1])
     ynew = np.exp(ylog - f + np.nanmedian(ylog_autosome))
     ynew = [0 if x<0 else x for x in ynew]
-    ynew[zerocov] = 'nan'
     dat["gc.corrected"] = ynew
+    dat.loc[zerocov]["gc.corrected"] = 'nan'
     outname = covfile + ".GCcorrected"
     dat.to_csv(outname,index=False,sep="\t")
     return(outname)
-def calc_coverage_ontarget(bamdir,bedname,bedfile,genome_size):
     bamfiles = files_in_dir(bamdir, str2srch = ".bam")
     
     cov_files_gccorrected = []
