@@ -33,6 +33,8 @@ def main(argv):
     parser.add_option('-r', '--multiprocess',type="int", action="store", dest="multiprocess",help="Number of processes for multi-processing of coverage calculations", default=16)
     parser.add_option('-o', '--outdir_path', action="store", dest="outdir",help="Output directory for the final files", default=None)
     parser.add_option('-x', '--filter_bed', action="store", dest="filterBED",help="Regions to exclude (e.g., centromeres)", default=None)
+    parser.add_option('-c', '--backgroundDir', action="store", dest="bgdir",help="Directory to four background files", default=None)
+
     options, args = parser.parse_args()
     if options.outdir==None:
         options.outdir = options.targetedBAM_dir   
@@ -48,8 +50,11 @@ def main(argv):
         raise ValueError("There must be either a path for the final Z-score background or directory of bam files to build one from")
     if options.normalPath2_w_b==None and options.normalPath2_w==None:
         raise ValueError('"There must be either a path for the final Z-score background or directory of bam files to build one from"')
-        
-
+    if options.bgdir!=None:
+        options.normalPath1_t_b = options.bgdir+"/background-ontarget-cohort1.txt"
+        options.normalPath1_w_b = options.bgdir+"/background-offtarget-cohort1.txt"
+        options.normalPath2_t_b = options.bgdir+"/background-ontarget-cohort2.txt"
+        options.normalPath2_w_b = options.bgdir+"/background-offtarget-cohort2.txt"
     ## Off-target coverage calculations
     binbedname = options.genomeBED + ".binned."+str(options.binSize)+".bed"
     find_antitarget(genome_size=options.genomeBED,savename=binbedname, binsize = options.binSize) 
@@ -62,11 +67,11 @@ def main(argv):
     calc_coverage_ontarget_parallel(bamdir=options.targetedBAM_dir,bedname = bedname_new,bedfile = options.selectorFile,genome_size = options.genomeBED, multiprocess=options.multiprocess) 
     
     ## CREATE BACKGROUND *IF NOT PROVIDED*
-    if options.normalPath1_t!=None:
+    if options.normalPath1_t_b==None:
         calc_coverage_ontarget_parallel(bamdir=options.normalPath1_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
         calc_bg_stats(options.normalPath1_t,savename = options.normalPath1_t+"/background-ontarget-cohort1.txt",countzero=True)
         options.normalPath1_t_b = options.normalPath1_t+"/background-ontarget-cohort1.txt"
-    if options.normalPath1_w!=None:
+    if options.normalPath1_w_b==None:
         calc_coverage_antitarget_parallel(bamdir=options.normalPath1_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
         print("helloooo")
         calc_bg_stats(options.normalPath1_w,savename = options.normalPath1_w+"/background-offtarget-cohort1.txt",countzero=True)
@@ -79,25 +84,23 @@ def main(argv):
     annotate_index(options.allBAM_dir,options.annotBED,options.filterBED)
     
     ##### This is where we incorporate the information from the 2nd control cohort ****
-    if options.normalPath2_t_b!=None:
-        if options.normalPath2_t!=None:
-            if options.normalPath2_t!=options.normalPath1_t:
-                calc_coverage_ontarget_parallel(bamdir=options.normalPath2_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
-                print("helloooo")
-            cov_preparation(options.normalPath2_t,options.normalPath1_t_b,numrow=5000)
-            annotate_index(options.normalPath2_t,options.annotBED,options.filterBED)
-            calc_bg_stats(covdir=options.normalPath2_t,savename = options.normalPath2_t+"/background-ontarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
-            options.normalPath2_t_b = options.normalPath2_t+"/background-ontarget-cohort2.txt"
+    if options.normalPath2_t_b==None:
+        if options.normalPath2_t!=options.normalPath1_t:
+            calc_coverage_ontarget_parallel(bamdir=options.normalPath2_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
+            print("helloooo")
+        cov_preparation(options.normalPath2_t,options.normalPath1_t_b,numrow=5000)
+        annotate_index(options.normalPath2_t,options.annotBED,options.filterBED)
+        calc_bg_stats(covdir=options.normalPath2_t,savename = options.normalPath2_t+"/background-ontarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
+        options.normalPath2_t_b = options.normalPath2_t+"/background-ontarget-cohort2.txt"
 
-    if options.normalPath2_w_b!=None:
-        if options.normalPath2_w!=None:
-            if options.normalPath2_w!=options.normalPath1_w:
-                print("helloooo")
-                calc_coverage_antitarget_parallel(bamdir=options.normalPath2_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
-            cov_preparation(options.normalPath2_w,options.normalPath1_w_b,numrow=100)
-            annotate_index(options.normalPath2_w,options.annotBED,options.filterBED)
-            calc_bg_stats(covdir=options.normalPath2_w,savename = options.normalPath2_w+"/background-offtarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
-            options.normalPath2_w_b = options.normalPath2_w+"/background-offtarget-cohort2.txt"
+    if options.normalPath2_w_b==None:
+        if options.normalPath2_w!=options.normalPath1_w:
+            print("helloooo")
+            calc_coverage_antitarget_parallel(bamdir=options.normalPath2_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
+        cov_preparation(options.normalPath2_w,options.normalPath1_w_b,numrow=100)
+        annotate_index(options.normalPath2_w,options.annotBED,options.filterBED)
+        calc_bg_stats(covdir=options.normalPath2_w,savename = options.normalPath2_w+"/background-offtarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
+        options.normalPath2_w_b = options.normalPath2_w+"/background-offtarget-cohort2.txt"
     ## In the following, we take the last step by computing the stats for final index transformation using the 2nd cohort of controls
     ## Final Z-score generation!
     index2z(options.targetedBAM_dir,options.allBAM_dir,options.normalPath2_t_b,options.normalPath2_w_b,options.annotBED,sampleinfo=options.sampleInfo,outdir=options.outdir)
