@@ -33,10 +33,23 @@ The script takes:
 
 The algorithm generates various intermediate files: raw coverage --> GC-bias corrected coverage --> log-transformed normalized coverage --> sample-specific STD normalized --> annotated by the annotation file  
 
+## Copy number index flat files:
+
+The final files have the format **<samplename>.cnvZscores** with four main columns for further analysis:<br /> 
+
+1- **gc.corrected.norm.log.std.index.zWeighted.Final** which is the weighted Stouffer's Z-score for CNVs.<br />
+2- **gc.corrected.norm.log.std.index.stdnormWeighted.Final** which is the weighted combined CNV index.<br />
+3- **gc.corrected.norm.log.std.index.z.Final** similar to 1 but with no weights.<br />
+4- **gc.corrected.norm.log.std.index.stdnorm.Final** similar to 2 but with no weights.<br /> 
+
+
+## Visulaizations: 
+
 The ideograms are stored in four different files: 
 
 Weighted Combined Index (division only by Standard Deviation and Then Weighted Aggregation of On and Off target)<br />
-![alt text](https://github.com/Foresight-Diagnostics/cnv/blob/main/example/minor-donor-5-F005-0000790-A7_cfDNA.cnvZscores.ideogram.png)
+![alt text](https://github.com/Foresight-Diagnostics/cnv/blob/main/example/minor-donor-5-F005-0000790-A7_cfDNA.cnvZscores.ideogram.png)<br />
+
 
 
 # Usage:
