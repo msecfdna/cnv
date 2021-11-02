@@ -39,5 +39,6 @@ The current version does argument parsing and can be run as follows [if no backg
 
 python3 cnv-pipeline.py **-b** \<path to barcode-dedupe bams\> **-B** \<path to samtools deduped bams\> **-s** \<path to selector file\> **-g** \<human genome reference FASTA\> **-G** \<human genome reference bed\> **-m** \<path to bc deduped for ctrs I\> **-M** \<path to sam deduped for ctrs I\> **-n** \<path to bc deduped for ctrs II\> **-N** \<path to sam deduped for ctrs II\> **-i**  \<sample information file to match barcode and samtools deduped files\> **-a** \<path to annotation file\> **-x** \<path to the reference centromeres to filter\> **-r** \<number of processes to multiprocess the coverage calculations\> **-o** \<output directory to write the final Z-scores and .png files\> 
 
-If background files are already generated and are placed in one directory, the option would be **-c** and there must be four files in there: **background-ontarget-cohort1.txt** **background-offtarget-cohort1.txt** **background-ontarget-cohort2.txt** **background-offtarget-cohort2.txt**
+If background files are already generated and are placed in one directory, the option would be **-c** and there must be four files in there:<br />
+**background-ontarget-cohort1.txt**<br />**background-offtarget-cohort1.txt**<br />**background-ontarget-cohort2.txt**<br />**background-offtarget-cohort2.txt**
 In addition to that, individual files can be passed to the script (direct path to the files) by the following options: **-p** **-P** **-q** **-Q**
