@@ -4,12 +4,11 @@
 Created on Fri Oct 15 18:16:57 2021
 @author: MShahrokh
 """
-
 import sys, getopt
 import optparse
 from cnv_sidefuncs import *
 from cnv_plots import *
-# A wrapper to generate copy number index values & calls 
+# A wrapper to generate copy number index values
 
 def main(argv):
     parser = optparse.OptionParser()
