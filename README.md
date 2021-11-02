@@ -35,8 +35,8 @@ The algorithm generates various intermediate files: raw coverage --> GC-bias cor
 
 The ideograms are stored in four different files: 
 
-Weighted Combined Index (division only by Standard Deviation and Then Weighted Aggregation of On and Off target): 
-![alt text](https://github.com/Foresight-Diagnostics/cnv/tree/main/example/minor-donor-5-F005-0000794-A7_Normal.weighted.combined.ideogram.png?raw=true)
+Weighted Combined Index (division only by Standard Deviation and Then Weighted Aggregation of On and Off target)<br />
+![alt text](https://github.com/Foresight-Diagnostics/cnv/blob/main/example/minor-donor-5-F005-0000790-A7_cfDNA.cnvZscores.ideogram.png)
 
 
 # Usage:
