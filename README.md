@@ -18,15 +18,16 @@ The script takes:
 (9) Directory of samtools-deduped bams for control cohort 2<br />
 (10) Path to the annotation file (format: 4-column bed file with header as: "#chr"    "start"   "end"     "name")<br />
 (11) Path to the genome reference centromeres to exclude<br />
-(12) Number of processes in multiprocessing using Pool (this is to speed up the coverage calculation part which could be very slow- default: 16)<br />
-(13) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
-(14) Off-target bin size (optional- default: 100kb)<br /> 
-(15) Path to targeted background for control cohort 1 (required **if 6 is not provided**)<br /> 
-(16) Path to off-target background for control cohort 1 (required **if 7 is not provided**)<br /> 
-(17) Path to targeted background for control cohort 2 (required **if 8 is not provided**)<br /> 
-(18) Path to off-target background for control cohort 2 (required **if 9 is not provided**)<br /> 
-(19) Maximum fragment length (optional- default: 1000bp)<br /> 
-(20) Minimum mapping quality (optional- default: 20)<br /> 
+(12) Path to the sample info file (format: 3-column tsv file with header as: "sample" "barcode-deduped" "samtools_deduped" where the first column is simply a name assigned to the sample)
+(13) Number of processes in multiprocessing using Pool (this is to speed up the coverage calculation part which could be very slow- default: 16)<br />
+(14) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
+(15) Off-target bin size (optional- default: 100kb)<br /> 
+(16) Path to targeted background for control cohort 1 (required **if 6 is not provided**)<br /> 
+(17) Path to off-target background for control cohort 1 (required **if 7 is not provided**)<br /> 
+(18) Path to targeted background for control cohort 2 (required **if 8 is not provided**)<br /> 
+(19) Path to off-target background for control cohort 2 (required **if 9 is not provided**)<br /> 
+(20) Maximum fragment length (optional- default: 1000bp)<br /> 
+(21) Minimum mapping quality (optional- default: 20)<br /> 
 
 # Output:
 
