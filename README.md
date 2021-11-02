@@ -49,7 +49,7 @@ The ideograms are stored in four different files:
 
 Weighted Combined Index (division only by Standard Deviation and Then Weighted Aggregation of On and Off target)<br />
 ![alt text](https://github.com/Foresight-Diagnostics/cnv/blob/main/example/minor-donor-5-F005-0000790-A7_cfDNA.cnvZscores.ideogram.png)<br />
-
+![alt text](https://github.com/Foresight-Diagnostics/cnv/blob/main/example/minor-donor-5-F005-0000790-A7_cfDNA.weighted.combined.ideogram.png)
 
 
 # Usage:
