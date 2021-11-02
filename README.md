@@ -17,6 +17,7 @@ The script takes:
 (8) Directory of barcode-deduped bams for control cohort 2<br /> 
 (9) Directory of samtools-deduped bams for control cohort 2<br />
 (10) Path to the annotation file (format: 4-column bed file with header as: "#chr"    "start"   "end"     "name")<br />
+(11) Number of processes in multiprocessing using Pool (this is to speed up the coverage calculation part which could be very slow- default: 16)
 (11) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
 (12) Off-target bin size (optional- default: 100kb)<br /> 
 (13) Path to targeted background for control cohort 1 (required **if 6 is not provided**)<br /> 
@@ -29,3 +30,9 @@ The script takes:
 # Output:
 
 The algorithm generates various intermediate files: raw coverage --> GC-bias corrected coverage --> log-transformed normalized coverage --> sample-specific STD normalized --> annotated by the annotation file  
+
+# Example:
+
+The current version does argument parsing and can be run as follows:
+
+python3 cnv-pipeline.py -b <path to barcode-dedupe bams> -B <path to samtools deduped bams> -s <path to selector file> -g <human genome reference FASTA> -G <human genome reference bed> -m <path to barcode deduped bams for control cohort I> -M <path to samtools deduped bams for control cohort I> -n <path to barcode deduped bams for control cohort II> -N <path to samtools deduped bams for control cohort II> -i <sample information file to match barcode and samtools deduped files> -a <path to annotation file> -x <path to the reference centromeres to filter> -r <number of processes to multiprocess the coverage calculations> -o <output directory to write the final Z-scores and .png files> 
