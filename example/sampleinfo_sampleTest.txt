@@ -1,0 +1,9 @@
+sample	barcode_deduped	samtools_deduped
+minor-donor-1-F005-0000787-A7_cfDNA	test_bc_deduped/Sample_minor-donor-1-F005-0000787-A7_cfDNA.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-1-F005-0000787-A7_cfDNA.sorted.samtools-deduped.sorted.bam
+minor-donor-1-F005-0000791-A7_Normal	test_bc_deduped/Sample_minor-donor-1-F005-0000791-A7_Normal.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-1-F005-0000791-A7_Normal.sorted.samtools-deduped.sorted.bam
+minor-donor-2-F005-0000788-A7_cfDNA	test_bc_deduped/Sample_minor-donor-2-F005-0000788-A7_cfDNA.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-2-F005-0000788-A7_cfDNA.sorted.samtools-deduped.sorted.bam
+minor-donor-2-F005-0000792-A7_Normal	test_bc_deduped/Sample_minor-donor-2-F005-0000792-A7_Normal.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-2-F005-0000792-A7_Normal.sorted.samtools-deduped.sorted.bam
+minor-donor-4-F005-0000789-A7_cfDNA	test_bc_deduped/Sample_minor-donor-4-F005-0000789-A7_cfDNA.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-4-F005-0000789-A7_cfDNA.sorted.samtools-deduped.sorted.bam
+minor-donor-4-F005-0000793-A7_Normal	test_bc_deduped/Sample_minor-donor-4-F005-0000793-A7_Normal.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-4-F005-0000793-A7_Normal.sorted.samtools-deduped.sorted.bam
+minor-donor-5-F005-0000790-A7_cfDNA	test_bc_deduped/Sample_minor-donor-5-F005-0000790-A7_cfDNA.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-5-F005-0000790-A7_cfDNA.sorted.samtools-deduped.sorted.bam
+minor-donor-5-F005-0000794-A7_Normal	test_bc_deduped/Sample_minor-donor-5-F005-0000794-A7_Normal.dualindex-deduped.sorted.bam	test_sam_deduped/Sample_minor-donor-5-F005-0000794-A7_Normal.sorted.samtools-deduped.sorted.bam
