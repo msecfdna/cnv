@@ -17,9 +17,9 @@ The script takes:
 (8) Directory of barcode-deduped bams for control cohort 2<br /> 
 (9) Directory of samtools-deduped bams for control cohort 2<br />
 (10) Path to the annotation file (format: 4-column bed file with header as: "#chr"    "start"   "end"     "name")<br />
-(11) Number of processes in multiprocessing using Pool (this is to speed up the coverage calculation part which could be very slow- default: 16)<br />
-(12) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
-(13) Path to the genome reference centromeres to exclude<br />
+(11) Path to the genome reference centromeres to exclude<br />
+(12) Number of processes in multiprocessing using Pool (this is to speed up the coverage calculation part which could be very slow- default: 16)<br />
+(13) Directory in which the final Z-score files and plots would be stored (optional- if not provided everything will be written in the **target sample barcode-deduped directory**, i.e. number 1 above)<br />
 (14) Off-target bin size (optional- default: 100kb)<br /> 
 (15) Path to targeted background for control cohort 1 (required **if 6 is not provided**)<br /> 
 (16) Path to off-target background for control cohort 1 (required **if 7 is not provided**)<br /> 
