@@ -8,6 +8,7 @@ import sys, getopt
 import optparse
 from cnv_sidefuncs import *
 from cnv_plots import *
+import datetime
 # A wrapper to generate copy number index values
 
 def main(argv):
@@ -61,50 +62,69 @@ def main(argv):
     
     ## Off-target coverage calculations
     binbedname = intermediateDir + os.path.basename(options.genomeBED) + ".binned."+str(options.binSize)+".bed"
-    find_antitarget(genome_size=options.genomeBED,savename=binbedname, binsize = options.binSize) 
+    find_antitarget(genome_size=options.genomeBED,savename=binbedname, binsize = options.binSize)
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tGenome is binned and stored in this file: "+binbedname)
     binBED_GC = add_gc_col(binbedname,genome = options.genomeFASTA, extend = None)
     paddedSel_file = padd_selector(bedname=options.selectorFile, paddsize=500, outdir=intermediateDir)
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: coverage of off-target fragments for target samples")
     calc_coverage_antitarget_parallel(bamdir=options.allBAM_dir,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength)
-    
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for target samples")
+
     # On-target coverage calculations [returning the file names of GC-corrected depth]
     bedname_new = prepare_bed_base(bedname = options.selectorFile, genome = options.genomeFASTA)
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: coverage of on-target fragments for target samples")
     calc_coverage_ontarget_parallel(bamdir=options.targetedBAM_dir,bedname = bedname_new,bedfile = options.selectorFile,genome_size = options.genomeBED, multiprocess=options.multiprocess) 
-    
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for target samples")
     ## CREATE BACKGROUND *IF NOT PROVIDED*
     if options.normalPath1_t_b==None:
         calc_coverage_ontarget_parallel(bamdir=options.normalPath1_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_t,savename = options.normalPath1_t+"/background-ontarget-cohort1.txt",countzero=True)
         options.normalPath1_t_b = options.normalPath1_t+"/background-ontarget-cohort1.txt"
     if options.normalPath1_w_b==None:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of off-target fragments for control cohort I samples")
         calc_coverage_antitarget_parallel(bamdir=options.normalPath1_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_w,savename = options.normalPath1_w+"/background-offtarget-cohort1.txt",countzero=True)
         options.normalPath1_w_b = options.normalPath1_w+"/background-offtarget-cohort1.txt"
     ## First generate the off-target bin background
     cov_preparation(options.targetedBAM_dir,options.normalPath1_t_b,numrow=5000)
     cov_preparation(options.allBAM_dir,options.normalPath1_w_b,numrow=100)
     ## In the following, we annotate the CNV info using the user provided genomic-coordinates of a set of pre-defined regions
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: CNV index and annotations for on-target and off-target (target samples)")
     annotate_index(options.targetedBAM_dir,options.annotBED,options.filterBED)
     annotate_index(options.allBAM_dir,options.annotBED,options.filterBED)
-    
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for on-target and off-target (target samples)")
     ##### This is where we incorporate the information from the 2nd control cohort ****
     if options.normalPath2_t_b==None:
         if options.normalPath2_t!=options.normalPath1_t:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of on-target fragments for control cohort II samples")
             calc_coverage_ontarget_parallel(bamdir=options.normalPath2_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort II samples")
         cov_preparation(options.normalPath2_t,options.normalPath1_t_b,numrow=5000)
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: CNV index and annotations for on-target (control cohort II)")
         annotate_index(options.normalPath2_t,options.annotBED,options.filterBED)
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for on-target (control cohort II)")
         calc_bg_stats(covdir=options.normalPath2_t,savename = options.normalPath2_t+"/background-ontarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
         options.normalPath2_t_b = options.normalPath2_t+"/background-ontarget-cohort2.txt"
 
     if options.normalPath2_w_b==None:
         if options.normalPath2_w!=options.normalPath1_w:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of off-target fragments for control cohort II samples")
             calc_coverage_antitarget_parallel(bamdir=options.normalPath2_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for control cohort II samples")
         cov_preparation(options.normalPath2_w,options.normalPath1_w_b,numrow=100)
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: CNV index and annotations for off-target (control cohort II)")
         annotate_index(options.normalPath2_w,options.annotBED,options.filterBED)
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for off-target (control cohort II)")
         calc_bg_stats(covdir=options.normalPath2_w,savename = options.normalPath2_w+"/background-offtarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
         options.normalPath2_w_b = options.normalPath2_w+"/background-offtarget-cohort2.txt"
     ## In the following, we take the last step by computing the stats for final index transformation using the 2nd cohort of controls
     ## Final Z-score generation!
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: summarizing by pre-defined regions for CNV index and Z-scores...")
     index2z(options.targetedBAM_dir,options.allBAM_dir,options.normalPath2_t_b,options.normalPath2_w_b,options.annotBED,sampleinfo=options.sampleInfo,outdir=options.outdir)
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: summarizing by pre-defined regions for CNV index and Z-scores...")
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tGenerating ideograms...")
     ideogram(options.outdir,options.genomeBED)
     sys.stdout = old_stdout
     log_file.close()

@@ -72,17 +72,12 @@ def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000,mapq = 20)
     #lines =  f.readlines()[1:]
     for ch in chrs:
         cc+=1
-        print(ch)
         #fields = line.split()
         command_str = "samtools view -F3084 -q "+ str(mapq)+ " " + bamname + " "+ ch
         command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& $9<=" + str(maxLength)+") print $3\"\t\"$4-1\"\t\"$4+$9}' | bedtools subtract -a stdin -b " + targetExclude + " -A > " + outname_temp
-        # if filterRgns!=None:
-        #     command_str = command_str + " | bedtools subtract -a stdin -b " + filterRgns + " -A > "+ outname_temp
-        # else:
-        #    command_str = command_str + " > "+ outname_temp
-        print("******************")
-        print(command_str)
-        print("******************")
+        # print("******************")
+        # print(command_str)
+        # print("******************")
         subprocess.run(command_str,shell=True,stdout=subprocess.DEVNULL)
         if os.stat(outname_temp).st_size != 0:
             if cc==1:
@@ -197,7 +192,6 @@ def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
     
     cov_files_gccorrected = []
     for bf in bamfiles:
-        print(bf)
         baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile=bedfile,genome_size=genome_size)
         baselevel_gc_fname = gc_correct(baselevel_fname)
         cov_files_gccorrected.append(baselevel_gc_fname)
@@ -209,7 +203,6 @@ def calc_coverage_ontarget_single(bf,bedname,bedfile, genome_size):
         
 def calc_coverage_ontarget_parallel(bamdir,bedname,bedfile,genome_size, multiprocess = 16):
     bamfiles = files_in_dir(bamdir, str2srch = ".bam")
-    print(bamfiles)
     pool = Pool(processes = multiprocess) 
     pool.map(partial(calc_coverage_ontarget_single,bedname=bedname,bedfile=bedfile,genome_size=genome_size), bamfiles) 
     pool.close()
@@ -412,7 +405,6 @@ def index2z(covdirT,covdirW,covdirT_bg,covdirW_bg,annotBED,sampleinfo=None,outdi
         nsamples = sampleinfo_dat.shape[0]
         for index, sinf in sampleinfo_dat.iterrows():
             samplename = sinf[0]
-            print(samplename)
             sample_t = re.sub('.bam', ".base.coverage.GCcorrected.index.annotated.zScore", sinf[1], count=1)
             sample_w = re.sub('.bam', ".bin.coverage.GCcorrected.index.annotated.zScore", sinf[2], count=1)
             dat_t = pd.read_csv(sample_t,sep="\t")
