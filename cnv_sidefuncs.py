@@ -189,7 +189,7 @@ def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
     ynew = np.exp(ylog - f + np.nanmedian(ylog_autosome))
     ynew = [0 if x<0 else x for x in ynew]
     dat["gc.corrected"] = ynew
-    dat.loc[zerocov]["gc.corrected"] = 'nan'
+    dat.loc[zerocov]["gc.corrected"] = np.nan
     outname = covfile + ".GCcorrected"
     dat.to_csv(outname,index=False,sep="\t")
     return(outname)
@@ -256,7 +256,7 @@ def calc_bg_stats(covdir,savename = None, str2use = "gc.corrected",str2srch = ".
     bg_info["start"] = dat["start"]
     bg_info["end"] = dat["end"]
     bg_info["gc"] = dat["gc"]
-    bg_info["f_depth"] = "NaN"
+    bg_info["f_depth"] = np.nan
     
     if countzero:
         numzeros = (allrows_count == 0).sum(axis=1)/allrows_count.shape[1]
@@ -284,11 +284,11 @@ def sample_base_std(dat,numrow=5000,str2calc = "gc.corrected.norm.log"):
         curr_chr = random.choice(chrs)
         dat_select = dat[dat.iloc[:,0]==curr_chr]
         if dat_select.shape[0]<numrow:
-            std_i = np.std(dat_select[str2calc])
+            std_i = np.nanstd(dat_select[str2calc])
         else:
             curr_pos = random.choice(list(dat_select.index))
             dat_select2 = dat_select[abs(dat_select.index-curr_pos)<=numrow/2]
-            std_i = np.std(dat_select2[str2calc])
+            std_i = np.nanstd(dat_select2[str2calc])
         stds_.append(std_i)
     return(np.nanmedian(stds_))
 
@@ -315,13 +315,13 @@ def cov_preparation(covdir,bgfile,numrow=5000):
         # Taking the log
         dat_logged = log_vals(dat,str2calc = "gc.corrected.norm")
         # calculating the sample level STD
-        dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log"] = 'nan'
+        dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log"] = np.nan
+        dat_logged.loc[(((bgdat['gc.corrected.std'])/abs(bgdat['gc.corrected.mu']))>highCoV),"gc.corrected.norm.log"] = np.nan
         sample_std = sample_base_std(dat_logged,numrow=numrow,str2calc = "gc.corrected.norm.log")
         # Dividing the normalized log-tranformed coverage by the STD
         dat_logged["gc.corrected.norm.log.std"] = dat_logged["gc.corrected.norm.log"]/sample_std
         dat_logged=dat_logged.rename(columns = {'chr':'#chr'})
         #dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log.std"] = 'nan'
-        dat_logged.loc[(((bgdat['gc.corrected.std'])/abs(bgdat['gc.corrected.mu']))>highCoV),"gc.corrected.norm.log.std"] = 'nan'
         dat_logged.to_csv(covfile+".index",index=False,sep="\t")
 def IQRV(df):
     return((df.quantile(0.75,axis=1)-df.quantile(0.25,axis=1))/df.quantile(0.5,axis=1))
@@ -347,11 +347,11 @@ def annotate_index(covdir,annotBED,filterRgns=None):
         #dat=dat.rename(columns = {0:'#chr',1:"start",2:"end",3:"name"})
         dat['name2'] = dat.iloc[:,0] + "_" + dat.iloc[:,3]
         
-        dat.loc[(dat[4]=="."),4] = 'nan'
+        dat.loc[(dat[4]=="."),4] = np.nan
         dat[4] = dat[4].astype(float)
-        dat.loc[(dat[5]=="."),5] = 'nan'
+        dat.loc[(dat[5]=="."),5] = np.nan
         if filterRgns!=None:
-            dat.loc[(dat[6]==1),5] = 'nan'
+            dat.loc[(dat[6]==1),5] = np.nan
         dat[5] = dat[5].astype(float)
         
         # print("***")
