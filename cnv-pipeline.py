@@ -77,6 +77,7 @@ def main(argv):
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for target samples")
     ## CREATE BACKGROUND *IF NOT PROVIDED*
     if options.normalPath1_t_b==None:
+        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of on-target fragments for control cohort I samples")
         calc_coverage_ontarget_parallel(bamdir=options.normalPath1_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_t,savename = options.normalPath1_t+"/background-ontarget-cohort1.txt",countzero=True)
