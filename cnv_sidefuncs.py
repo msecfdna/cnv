@@ -188,14 +188,14 @@ def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
     outname = covfile + ".GCcorrected"
     dat.to_csv(outname,index=False,sep="\t")
     return(outname)
-    bamfiles = files_in_dir(bamdir, str2srch = ".bam")
+    # bamfiles = files_in_dir(bamdir, str2srch = ".bam")
     
-    cov_files_gccorrected = []
-    for bf in bamfiles:
-        baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile=bedfile,genome_size=genome_size)
-        baselevel_gc_fname = gc_correct(baselevel_fname)
-        cov_files_gccorrected.append(baselevel_gc_fname)
-    return(cov_files_gccorrected)
+    # cov_files_gccorrected = []
+    # for bf in bamfiles:
+    #     baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile=bedfile,genome_size=genome_size)
+    #     baselevel_gc_fname = gc_correct(baselevel_fname)
+    #     cov_files_gccorrected.append(baselevel_gc_fname)
+    # return(cov_files_gccorrected)
 
 def calc_coverage_ontarget_single(bf,bedname,bedfile, genome_size):
     baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile = bedfile, genome_size=genome_size)
