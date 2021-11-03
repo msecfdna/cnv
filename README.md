@@ -26,7 +26,7 @@ The script takes:
 (17) Path to off-target background for control cohort 1 (required **if 7 is not provided**)<br /> 
 (18) Path to targeted background for control cohort 2 (required **if 8 is not provided**)<br /> 
 (19) Path to off-target background for control cohort 2 (required **if 9 is not provided**)<br /> 
-(20) Directory in which four background files are provided (NOTE: If this option is used the certain file names are expected)<br />
+(20) Directory in which four background files are provided (NOTE: If this option is used, certain file names are expected)<br />
 (21) Maximum fragment length (optional- default: 1000bp)<br /> 
 (22) Minimum mapping quality (optional- default: 20)<br /> 
 
