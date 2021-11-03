@@ -315,11 +315,12 @@ def cov_preparation(covdir,bgfile,numrow=5000):
         # Taking the log
         dat_logged = log_vals(dat,str2calc = "gc.corrected.norm")
         # calculating the sample level STD
+        dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log"] = 'nan'
         sample_std = sample_base_std(dat_logged,numrow=numrow,str2calc = "gc.corrected.norm.log")
         # Dividing the normalized log-tranformed coverage by the STD
         dat_logged["gc.corrected.norm.log.std"] = dat_logged["gc.corrected.norm.log"]/sample_std
         dat_logged=dat_logged.rename(columns = {'chr':'#chr'})
-        dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log.std"] = 'nan'
+        #dat_logged.loc[(bgdat['gc.corrected.sumzero']>rmvzerodepth),"gc.corrected.norm.log.std"] = 'nan'
         dat_logged.loc[(((bgdat['gc.corrected.std'])/abs(bgdat['gc.corrected.mu']))>highCoV),"gc.corrected.norm.log.std"] = 'nan'
         dat_logged.to_csv(covfile+".index",index=False,sep="\t")
 def IQRV(df):
