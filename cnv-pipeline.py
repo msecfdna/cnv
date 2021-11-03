@@ -33,12 +33,16 @@ def main(argv):
     parser.add_option('-o', '--outdir_path', action="store", dest="outdir",help="Output directory for the final files", default=None)
     parser.add_option('-x', '--filter_bed', action="store", dest="filterBED",help="Regions to exclude (e.g., centromeres)", default=None)
     parser.add_option('-c', '--backgroundDir', action="store", dest="bgdir",help="Directory to four background files", default=None)
-
+    old_stdout = sys.stdout
     options, args = parser.parse_args()
     if options.outdir==None:
         options.outdir = options.targetedBAM_dir   
     else:
         os.makedirs(options.outdir,exist_ok=True)
+    intermediateDir = options.outdir+"/intermediatefiles/"
+    os.makedirs(intermediateDir,exist_ok=True)
+    log_file = open(intermediateDir+"message.log","w")
+    sys.stdout = log_file
     ##
     if options.bgdir!=None:
         options.normalPath1_t_b = options.bgdir+"/background-ontarget-cohort1.txt"
@@ -56,10 +60,10 @@ def main(argv):
         raise ValueError('"There must be either a path for the final Z-score background or directory of bam files to build one from"')
     
     ## Off-target coverage calculations
-    binbedname = options.genomeBED + ".binned."+str(options.binSize)+".bed"
+    binbedname = intermediateDir + os.path.basename(options.genomeBED) + ".binned."+str(options.binSize)+".bed"
     find_antitarget(genome_size=options.genomeBED,savename=binbedname, binsize = options.binSize) 
     binBED_GC = add_gc_col(binbedname,genome = options.genomeFASTA, extend = None)
-    paddedSel_file = padd_selector(bedname=options.selectorFile, paddsize=500, outdir=options.outdir)
+    paddedSel_file = padd_selector(bedname=options.selectorFile, paddsize=500, outdir=intermediateDir)
     calc_coverage_antitarget_parallel(bamdir=options.allBAM_dir,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength)
     
     # On-target coverage calculations [returning the file names of GC-corrected depth]
@@ -102,6 +106,8 @@ def main(argv):
     ## Final Z-score generation!
     index2z(options.targetedBAM_dir,options.allBAM_dir,options.normalPath2_t_b,options.normalPath2_w_b,options.annotBED,sampleinfo=options.sampleInfo,outdir=options.outdir)
     ideogram(options.outdir,options.genomeBED)
+    sys.stdout = old_stdout
+    log_file.close()
 if __name__ == "__main__":
    main(sys.argv[1:])    
    
