@@ -40,6 +40,11 @@ def main(argv):
     else:
         os.makedirs(options.outdir,exist_ok=True)
     ##
+    if options.bgdir!=None:
+        options.normalPath1_t_b = options.bgdir+"/background-ontarget-cohort1.txt"
+        options.normalPath1_w_b = options.bgdir+"/background-offtarget-cohort1.txt"
+        options.normalPath2_t_b = options.bgdir+"/background-ontarget-cohort2.txt"
+        options.normalPath2_w_b = options.bgdir+"/background-offtarget-cohort2.txt"
     if options.normalPath1_t_b==None and options.normalPath1_t==None:
         raise ValueError("There must be either a path for the initial normalization background or directory of bam files to build one from")
     if options.normalPath1_w_b==None and options.normalPath1_w==None:
@@ -49,11 +54,7 @@ def main(argv):
         raise ValueError("There must be either a path for the final Z-score background or directory of bam files to build one from")
     if options.normalPath2_w_b==None and options.normalPath2_w==None:
         raise ValueError('"There must be either a path for the final Z-score background or directory of bam files to build one from"')
-    if options.bgdir!=None:
-        options.normalPath1_t_b = options.bgdir+"/background-ontarget-cohort1.txt"
-        options.normalPath1_w_b = options.bgdir+"/background-offtarget-cohort1.txt"
-        options.normalPath2_t_b = options.bgdir+"/background-ontarget-cohort2.txt"
-        options.normalPath2_w_b = options.bgdir+"/background-offtarget-cohort2.txt"
+    
     ## Off-target coverage calculations
     binbedname = options.genomeBED + ".binned."+str(options.binSize)+".bed"
     find_antitarget(genome_size=options.genomeBED,savename=binbedname, binsize = options.binSize) 
@@ -72,7 +73,6 @@ def main(argv):
         options.normalPath1_t_b = options.normalPath1_t+"/background-ontarget-cohort1.txt"
     if options.normalPath1_w_b==None:
         calc_coverage_antitarget_parallel(bamdir=options.normalPath1_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
-        print("helloooo")
         calc_bg_stats(options.normalPath1_w,savename = options.normalPath1_w+"/background-offtarget-cohort1.txt",countzero=True)
         options.normalPath1_w_b = options.normalPath1_w+"/background-offtarget-cohort1.txt"
     ## First generate the off-target bin background
@@ -86,7 +86,6 @@ def main(argv):
     if options.normalPath2_t_b==None:
         if options.normalPath2_t!=options.normalPath1_t:
             calc_coverage_ontarget_parallel(bamdir=options.normalPath2_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, multiprocess=options.multiprocess) 
-            print("helloooo")
         cov_preparation(options.normalPath2_t,options.normalPath1_t_b,numrow=5000)
         annotate_index(options.normalPath2_t,options.annotBED,options.filterBED)
         calc_bg_stats(covdir=options.normalPath2_t,savename = options.normalPath2_t+"/background-ontarget-cohort2.txt", str2use = "gc.corrected.norm.log.std.index",str2srch = ".GCcorrected.index.annotated")
@@ -94,7 +93,6 @@ def main(argv):
 
     if options.normalPath2_w_b==None:
         if options.normalPath2_w!=options.normalPath1_w:
-            print("helloooo")
             calc_coverage_antitarget_parallel(bamdir=options.normalPath2_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
         cov_preparation(options.normalPath2_w,options.normalPath1_w_b,numrow=100)
         annotate_index(options.normalPath2_w,options.annotBED,options.filterBED)
