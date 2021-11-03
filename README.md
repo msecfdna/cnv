@@ -2,12 +2,12 @@
 
 The CNV method implemented here combines the information from on-target and off-target fragments to assign a final copy number index or Z-score to a set of pre-defined genomic regions.
 
-Python 3.6.8 
-bedtools v2.26.0
-samtools 0.1.18
+Python 3.6.8<br />
+bedtools v2.26.0<br />
+samtools 0.1.18<br />
 
 Python modules:
-sys, numpy, pandas, re, os, statsmodels, scipy, random, subprocess, multiprocessing, unctools, matplotlib
+optparse, getopt, sys, numpy, pandas, re, os, statsmodels, scipy, random, subprocess, multiprocessing, unctools, matplotlib
 
 # Input: 
 
