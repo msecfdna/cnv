@@ -67,7 +67,7 @@ def main(argv):
     binBED_GC = add_gc_col(binbedname,genome = options.genomeFASTA, extend = None)
     paddedSel_file = padd_selector(bedname=options.selectorFile, paddsize=500, outdir=intermediateDir)
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: coverage of off-target fragments for target samples")
-    calc_coverage_antitarget_parallel(bamdir=options.allBAM_dir,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength)
+    calc_coverage_antitarget_parallel(bamdir=options.allBAM_dir,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess)
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for target samples")
 
     # On-target coverage calculations [returning the file names of GC-corrected depth]
