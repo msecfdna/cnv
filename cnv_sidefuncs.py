@@ -28,7 +28,7 @@ import scipy.signal as signal
 # a set of fixed regions for the off-target-
 
 def sample_cov_base(bamname,bedname,bedfile, genome_size,mapq=20):
-    outname = re.sub('.bam', '.base.coverage', bamname, count=1)
+    outname = re.sub('\.bam$', '.base.coverage', bamname, count=1)
     command_str = "samtools view " + bamname + " -q "+str(mapq) 
     command_str = command_str + " | awk '{if ($2==99 || $2==163) print $3\"\t\"$4-1\"\t\"$4+$9}' | bedtools intersect -a stdin -b  " + bedfile + "   "
     command_str = command_str + "| bedtools genomecov -i stdin -g " 
@@ -39,11 +39,19 @@ def sample_cov_base(bamname,bedname,bedfile, genome_size,mapq=20):
     covfile_merged = pd.merge(bedin_baselevel,covfile,on=['#chr','start','end'],how = 'left')
     covfile_merged.to_csv(outname,index=False,sep="\t")
     return(outname)
-def prepare_bed_base(bedname, genome, extend = 2500):# This is for base level info.
-    bedname_base = re.sub(".bed",".base.bed",bedname)
-    if not os.path.exists(bedname_base):
-        convert_bed_base(bedname, save = bedname_base)
-    outname = add_gc_col(bedname_base,genome=genome, extend = extend)
+def prepare_bed_base(bedname, genome, outdir,extend = 2500, lowres = False, binsz=60): # This is for base level info.
+    bedbasename = os.path.basename(bedname)
+    if lowres:
+        bedname_base = outdir+"/"+re.sub("\.bed$",".lowresbase.bed",bedbasename)
+        if not os.path.exists(bedname_base):
+            convert_bed_bin(bedname, binsz = binsz, save = bedname_base)
+        outname = add_gc_col(bedname_base,genome=genome, extend = extend)
+        
+    else:
+        bedname_base = outdir+"/"+re.sub("\.bed$",".base.bed",bedbasename)
+        if not os.path.exists(bedname_base):
+            convert_bed_base(bedname, save = bedname_base)
+        outname = add_gc_col(bedname_base,genome=genome, extend = extend)
     return(outname)
 def prepare_bed(bedname,genome,extend=2500): # This is for the bins alone! 
     add_gc_col(bedname,genome=genome,extend=extend)
@@ -55,10 +63,45 @@ def frag_cov(samrow,start,end):
 #start = time.time();frag_cov_bam(bamname,bedname);end = time.time();print(end-start)
 def padd_selector(bedname,paddsize,outdir):
     bedbasename = os.path.basename(bedname)
-    paddedname = outdir+"/"+re.sub('.bed','.padded.'+str(paddsize)+".bed",bedbasename)
+    paddedname = outdir+"/"+re.sub('\.bed$','.padded.'+str(paddsize)+".bed",bedbasename)
     commandstr = "cat "+bedname + " | awk '{print $1\"\t\"$2-500\"\t\"$3+500}' | bedtools merge -i stdin | bedtools sort -i stdin > "+paddedname
     subprocess.run(commandstr,shell=True)
     return(paddedname)
+def sample_cov_targetbin(bamname,bedname,maxLength=1000,mapq = 20): # Coverage across bins [non-baselevel] 
+    # *** This function expects 7 columns with a 4th column with name for the region to aggregate on! 
+    dat = pd.read_csv(bedname,sep="\t",header="infer") 
+    dat = dat.set_axis(['#chr', 'start', 'end','gc'], axis=1, inplace=False)
+    chrs = ["chr"+str(i) for i in range(1,23)]
+    chrs.extend(["chrX","chrY"])
+    #beddat = pd.read_csv(bedname,sep="\t",header="infer",skiprows=1) open(bedname)
+    outname = re.sub('\.bam$', '.base.coverage', bamname, count=1)
+    outname_temp = re.sub('\.bam$', '.base.coverage.temp', bamname, count=1)
+    cc = 0
+    #lines =  f.readlines()[1:]
+    for ch in chrs:
+        cc+=1
+        #fields = line.split()
+        command_str = "samtools view -F3084 -q "+ str(mapq)+ " " + bamname + " "+ ch
+        command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& $9<=" + str(maxLength)+") print $3\"\t\"$4-1\"\t\"$4+$9}' " + "  > " + outname_temp
+        # print("******************")
+        # print(command_str)
+        # print("******************")
+        subprocess.run(command_str,shell=True,stdout=subprocess.DEVNULL)
+        if os.stat(outname_temp).st_size != 0:
+            if cc==1:
+                command_str2 = "cat " + bedname + "| awk '{if ($1==\"" +ch+ "\") print $0}' " + "| bedtools coverage -b " + outname_temp + " -a stdin " + " > " + outname 
+                subprocess.run(command_str2,shell=True,stdout=subprocess.DEVNULL)  
+            else:
+                command_str2 = "cat " + bedname + "| awk '{if ($1==\"" +ch+ "\") print $0}' "+ "| bedtools coverage -b " + outname_temp + " -a stdin " + " >> " + outname 
+                subprocess.run(command_str2,shell=True,stdout=subprocess.DEVNULL)  
+    os.remove(outname_temp)
+    fnam = pd.read_csv(outname,sep="\t",header=None) 
+    dat_ = dat
+    dat_["cov"] = fnam.iloc[:,4]
+    dat_ = dat_.set_axis(['#chr', 'start', 'end','gc','f_depth'], axis=1, inplace=False)
+    dat_.to_csv(outname,index=False,sep="\t")
+    return(outname)
+
 def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000,mapq = 20): # Coverage across bins [non-baselevel] 
     # *** This function expects 7 columns with a 4th column with name for the region to aggregate on! 
     dat = pd.read_csv(binbed,sep="\t",header="infer") 
@@ -66,8 +109,8 @@ def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000,mapq = 20)
     chrs = ["chr"+str(i) for i in range(1,23)]
     chrs.extend(["chrX","chrY"])
     #beddat = pd.read_csv(bedname,sep="\t",header="infer",skiprows=1) open(bedname)
-    outname = re.sub('.bam', '.bin.coverage', bamname, count=1)
-    outname_temp = re.sub('.bam', '.bin.coverage.temp', bamname, count=1)
+    outname = re.sub('\.bam$', '.bin.coverage', bamname, count=1)
+    outname_temp = re.sub('\.bam$', '.bin.coverage.temp', bamname, count=1)
     cc = 0
     #lines =  f.readlines()[1:]
     for ch in chrs:
@@ -124,6 +167,45 @@ def add_gc_col(bedname,genome, extend = None, removeZero = True):
         datfinal = datfinal[datfinal.iloc[:,3]!=0] # removing zero GC contents
     datfinal.to_csv(outname,index=False,sep="\t")
     return(outname)
+def convert_bed_bin(bedin, binsz = 60, save = None): # Convert a tile-level selector to a base-level bed file
+    dat = pd.read_csv(bedin,sep="\t",header=None) 
+    nrow = dat.shape[0]
+    mydf = pd.DataFrame()
+    c = 0
+    st_s = []
+    ed_s = []
+    ch_s = []
+    for j in range(nrow):
+        cur_row= dat.iloc[j,:]
+        ch = cur_row[0]
+        st = cur_row[1]
+        ed = cur_row[2]
+        numtiles = np.ceil((ed-st)/binsz)
+        if (numtiles==1):
+            st_s.extend([float(st)])
+            ed_s.extend([float(st)])
+            ch_s.extend([ch]*(int(1)))
+        else:
+            rmd = np.remainder(ed-st,binsz)
+            ovlp = np.ceil((binsz -rmd )/(numtiles-1))
+            if rmd==0:
+                ovlp = 0
+            stp = binsz - ovlp 
+            newstarts = np.arange(st,st+numtiles*stp,int(stp))
+            newends = newstarts+binsz
+            newends[int(numtiles-1)] = ed
+            st_s.extend((newstarts))
+            ed_s.extend((newends))
+            ch_s.extend([ch]*(int(numtiles)))
+        
+    mydf["#chr"] = ch_s
+    mydf["start"] = [int(x) for x in st_s]
+    mydf["end"] = [int(x) for x in ed_s]
+    if save!=None:
+        mydf.to_csv(save,index=False,sep="\t")
+    else:
+        return(mydf)
+        
 def convert_bed_base(bedin, save = None): # Convert a tile-level selector to a base-level bed file
     dat = pd.read_csv(bedin,sep="\t",header=None) 
     nrow = dat.shape[0]
@@ -197,14 +279,17 @@ def gc_correct(covfile,lowess_frac = 0.1, autosome = True, minFCov = 5):
     #     cov_files_gccorrected.append(baselevel_gc_fname)
     # return(cov_files_gccorrected)
 
-def calc_coverage_ontarget_single(bf,bedname,bedfile, genome_size):
-    baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile = bedfile, genome_size=genome_size)
+def calc_coverage_ontarget_single(bf,bedname,bedfile, genome_size, lowres = False):
+    if lowres:
+        baselevel_fname = sample_cov_targetbin(bamname=bf,bedname = bedname)
+    else:
+        baselevel_fname = sample_cov_base(bamname=bf,bedname=bedname,bedfile = bedfile, genome_size=genome_size)
     baselevel_gc_fname = gc_correct(baselevel_fname)
         
-def calc_coverage_ontarget_parallel(bamdir,bedname,bedfile,genome_size, multiprocess = 16):
+def calc_coverage_ontarget_parallel(bamdir,bedname,bedfile,genome_size, lowres = False, multiprocess = 16):
     bamfiles = files_in_dir(bamdir, str2srch = ".bam")
     pool = Pool(processes = multiprocess) 
-    pool.map(partial(calc_coverage_ontarget_single,bedname=bedname,bedfile=bedfile,genome_size=genome_size), bamfiles) 
+    pool.map(partial(calc_coverage_ontarget_single,bedname=bedname,bedfile=bedfile,genome_size=genome_size, lowres = lowres), bamfiles) 
     pool.close()
 
 def calc_coverage_antitarget(bamdir,binbed,bedname,maxLength=1000):
@@ -405,8 +490,8 @@ def index2z(covdirT,covdirW,covdirT_bg,covdirW_bg,annotBED,sampleinfo=None,outdi
         nsamples = sampleinfo_dat.shape[0]
         for index, sinf in sampleinfo_dat.iterrows():
             samplename = sinf[0]
-            sample_t = re.sub('.bam', ".base.coverage.GCcorrected.index.annotated.zScore", sinf[1], count=1)
-            sample_w = re.sub('.bam', ".bin.coverage.GCcorrected.index.annotated.zScore", sinf[2], count=1)
+            sample_t = re.sub('\.bam$', ".base.coverage.GCcorrected.index.annotated.zScore", sinf[1], count=1)
+            sample_w = re.sub('\.bam$', ".bin.coverage.GCcorrected.index.annotated.zScore", sinf[2], count=1)
             dat_t = pd.read_csv(sample_t,sep="\t")
             dat_w = pd.read_csv(sample_w,sep="\t")
             w_t_raw = dat_t['IQR_median']
