@@ -34,11 +34,12 @@ def main(argv):
     parser.add_option('-o', '--outdir_path', action="store", dest="outdir",help="Output directory for the final files", default=None)
     parser.add_option('-x', '--filter_bed', action="store", dest="filterBED",help="Regions to exclude (e.g., centromeres)", default=None)
     parser.add_option('-c', '--backgroundDir', action="store", dest="bgdir",help="Directory to four background files", default=None)
-    parser.add_option('-v', '--calculateCovLogical', type="int", action="store", dest="calccov",help="Set to 0 if coverage files already EXIST", default=1)
+    parser.add_option('-v', '--calculateCovLogical_t', type="int", action="store", dest="calccov_t",help="Set to 0 if coverage files of target samples already EXIST", default=1)
+    parser.add_option('-u', '--calculateCovLogical_b', type="int", action="store", dest="calccov_b",help="Set to 0 if coverage files of background samples already EXIST", default=1)
     parser.add_option('-f', '--lowresolution', type="int", action="store", dest="lowres",help="Set to 1 if selector is bigger than 1M (e.g., exome data)", default=0)
     old_stdout = sys.stdout
     options, args = parser.parse_args()
-    print(options.calccov)
+    print(options.calccov_t)
     if options.outdir==None:
         options.outdir = options.targetedBAM_dir   
     else:
@@ -74,20 +75,20 @@ def main(argv):
     binBED_GC = add_gc_col(binbedname,genome = options.genomeFASTA, extend = None)
     paddedSel_file = padd_selector(bedname=options.selectorFile, paddsize=500, outdir=intermediateDir)
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: coverage of off-target fragments for target samples")
-    if options.calccov==1:
+    if options.calccov_t==1:
         calc_coverage_antitarget_parallel(bamdir=options.allBAM_dir,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess)
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for target samples")
 
     # On-target coverage calculations [returning the file names of GC-corrected depth]
     bedname_new = prepare_bed_base(bedname = options.selectorFile, genome = options.genomeFASTA, outdir=intermediateDir, lowres = options.lowres, binsz = 60)
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: coverage of on-target fragments for target samples")
-    if options.calccov==1:
+    if options.calccov_t==1:
         calc_coverage_ontarget_parallel(bamdir=options.targetedBAM_dir,bedname = bedname_new,bedfile = options.selectorFile,genome_size = options.genomeBED, lowres = options.lowres, multiprocess=options.multiprocess) 
     print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for target samples")
     ## CREATE BACKGROUND *IF NOT PROVIDED*
     if options.normalPath1_t_b==None:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of on-target fragments for control cohort I samples")
-        if options.calccov==1:
+        if options.calccov_b==1:
             calc_coverage_ontarget_parallel(bamdir=options.normalPath1_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED, lowres = options.lowres, multiprocess=options.multiprocess) 
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_t,savename = options.normalPath1_t+"/background-ontarget-cohort1.txt",countzero=True)
@@ -97,7 +98,7 @@ def main(argv):
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for on-target (control cohort I)")
     if options.normalPath1_w_b==None:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of off-target fragments for control cohort I samples")
-        if options.calccov==1:
+        if options.calccov_b==1:
             calc_coverage_antitarget_parallel(bamdir=options.normalPath1_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_w,savename = options.normalPath1_w+"/background-offtarget-cohort1.txt",countzero=True)
@@ -117,7 +118,7 @@ def main(argv):
     if options.normalPath2_t_b==None:
         if options.normalPath2_t!=options.normalPath1_t:
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of on-target fragments for control cohort II samples")
-            if options.calccov==1:
+            if options.calccov_b==1:
                 calc_coverage_ontarget_parallel(bamdir=options.normalPath2_t,bedname = bedname_new,bedfile = options.selectorFile, genome_size = options.genomeBED,lowres = options.lowres, multiprocess=options.multiprocess) 
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort II samples")
         cov_preparation(options.normalPath2_t,options.normalPath1_t_b,numrow=5000)
@@ -130,7 +131,7 @@ def main(argv):
     if options.normalPath2_w_b==None:
         if options.normalPath2_w!=options.normalPath1_w:
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of off-target fragments for control cohort II samples")
-            if options.calccov==1:
+            if options.calccov_b==1:
                 calc_coverage_antitarget_parallel(bamdir=options.normalPath2_w,binbed=binBED_GC,bedname = paddedSel_file, maxLength=options.maxLength, multiprocess=options.multiprocess) 
             print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for control cohort II samples")
         cov_preparation(options.normalPath2_w,options.normalPath1_w_b,numrow=100)

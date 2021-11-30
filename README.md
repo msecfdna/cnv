@@ -35,6 +35,7 @@ The script takes:
 (20) Directory in which four background files are provided (NOTE: If this option is used, certain file names are expected)<br />
 (21) Maximum fragment length (optional- default: 1000bp)<br /> 
 (22) Minimum mapping quality (optional- default: 20)<br /> 
+(23) Path to the blacklisted regions (e.g., cantromeres; IT MUST BE SORTED: bedtools sort -i [bed] -g [size file] > [sorted bed])<br />
 
 # Output:
 
@@ -70,3 +71,5 @@ If background files are already generated and are placed in one directory, the o
 **background-ontarget-cohort1.txt**<br />**background-offtarget-cohort1.txt**<br />**background-ontarget-cohort2.txt**<br />**background-offtarget-cohort2.txt**<br />
 
 Moreover, individual files can be passed to the script (direct path to the files) by the following options: **-p** **-P** **-q** **-Q**
+
+NEW: Exome mode: One can use the algorithm in the exome mode by activating the -f option (-f 1) which automatically creates bins for the panel. 
