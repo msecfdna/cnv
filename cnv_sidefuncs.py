@@ -82,7 +82,7 @@ def sample_cov_targetbin(bamname,bedname,maxLength=1000,mapq = 20): # Coverage a
         cc+=1
         #fields = line.split()
         command_str = "samtools view -F3084 -q "+ str(mapq)+ " " + bamname + " "+ ch
-        command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& $9<=" + str(maxLength)+") print $3\"\t\"$4-1\"\t\"$4+$9}' " + "  > " + outname_temp
+        command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& ($9<=" + str(maxLength)+" && $9>=0)) print $3\"\t\"$4-1\"\t\"$4+$9}' " + "  > " + outname_temp
         # print("******************")
         # print(command_str)
         # print("******************")
@@ -117,7 +117,7 @@ def sample_cov_antitarget(bamname,binbed,targetExclude,maxLength=1000,mapq = 20)
         cc+=1
         #fields = line.split()
         command_str = "samtools view -F3084 -q "+ str(mapq)+ " " + bamname + " "+ ch
-        command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& $9<=" + str(maxLength)+") print $3\"\t\"$4-1\"\t\"$4+$9}' | bedtools subtract -a stdin -b " + targetExclude + " -A > " + outname_temp
+        command_str = command_str + " | awk '{if (($2==99 || $2==163)"+ "&& ($9<=" + str(maxLength)+" && $9>=0)) print $3\"\t\"$4-1\"\t\"$4+$9}' | bedtools subtract -a stdin -b " + targetExclude + " -A > " + outname_temp
         # print("******************")
         # print(command_str)
         # print("******************")
@@ -539,3 +539,92 @@ def ideogram(covdir,genomeBED):
         plot_ideogram_individual(covfile=covfile, genomeBED=genomeBED, stroff = "gc.corrected.norm.log.std.index.stdnorm.off", stron = "gc.corrected.norm.log.std.index.stdnorm.on", ylabel = "Combined Index", savename=savename2)
         savename2_combined = re.sub('.cnvZscores','.weighted.combined', covfile, count=1)
         plot_ideogram_individual_singlescore(covfile=covfile, genomeBED=genomeBED, str2plot="gc.corrected.norm.log.std.index.zWeighted.Final", ylabel = "Weighted Stouffer's Z-score", savename=savename2_combined)
+# def fdr(p_vals):
+#     from scipy.stats import rankdata
+#     ranked_p_values = rankdata(p_vals)
+#     fdr = p_vals * len(p_vals) / ranked_p_values
+#     fdr[fdr > 1] = 1
+#     return fdr
+def threshold(covdir,zCol = "gc.corrected.norm.log.std.index.zWeighted.Final", qThresh = 0.99):
+    covfiles = files_in_dir(covdir, str2srch = ".cnvZscores")
+    mydf = pd.DataFrame()
+    for covfile in covfiles:
+        dat = pd.read_csv(covfile,sep="\t")
+        mydf[covfile] = dat[zCol]
+    threshes_amp = mydf.quantile(qThresh,axis=1)
+    threshes_del = mydf.quantile(1-qThresh,axis=1)
+    threshdf = pd.DataFrame()
+    threshdf["#chr"] = dat["#chr"]
+    threshdf["start"] = dat["start"]
+    threshdf["end"] = dat["end"]
+    threshdf["name"] = dat["name"]
+    threshdf["threshold_amp"] = list(threshes_amp)
+    threshdf["threshold_del"] = list(threshes_del)
+    threshdf.to_csv(covdir+"/event.thresholds.txt",sep="\t",index=False)
+    return(covdir+"/event.thresholds.txt")
+def callCNV_fdr(covdir,zCol = "gc.corrected.norm.log.std.index.zWeighted.Final"):
+    import scipy
+    import statsmodels.stats.multitest
+    covfiles = files_in_dir(covdir, str2srch = ".cnvZscores")
+    for covfile in covfiles:
+        dat = pd.read_csv(covfile,sep="\t")
+        zscores = dat[[zCol]]
+        p_values = scipy.stats.norm.sf(abs(zscores))*2
+        fdr_vals = [statsmodels.stats.multitest.fdrcorrection(x)[1][0] for x in p_values]
+        zscores2 = [x for x in zscores.iloc[:,0]]
+        for FDR in [0.01,0.05,0.1]:
+            binarycalls = [np.sign(y) if x<=FDR else 0 for x,y in zip(fdr_vals,zscores2)]
+            dat["CNVcalls"+"FDR"+str(FDR*100)] = binarycalls
+            dat.loc[(dat[zCol].isnull()),"CNVcalls"+"FDR"+str(FDR*100)] = np.nan
+        dat.to_csv(covfile+".CNVcallsFDR",sep="\t",index=False)
+def callCNV_normal(covdir,thresholdFile, zCol = "gc.corrected.norm.log.std.index.zWeighted.Final"):
+    import scipy
+    import statsmodels.stats.multitest
+    covfiles = files_in_dir(covdir, str2srch = ".cnvZscores")
+    thresholds = pd.read_csv(thresholdFile,sep="\t")
+    for covfile in covfiles:
+        dat = pd.read_csv(covfile,sep="\t")
+        dat_merged = pd.merge(thresholds,dat,on=['#chr','start','end','name'],how = 'left')
+        ternaryCalls = [1 if x>y else -1 if x<=z else 0 for x,y,z in zip(dat_merged[zCol],dat_merged["threshold_amp"],dat_merged["threshold_del"])]
+        dat_merged["CNVcalls_threshold"] = ternaryCalls
+        dat_merged.loc[(dat_merged[zCol].isnull()),"CNVcalls_threshold"] = np.nan
+        dat_merged.to_csv(covfile+".CNVcallsThreshold",sep="\t",index=False)            
+def mergeFiles_fdr(covdir,FDR = 0.01):
+    covfiles = files_in_dir(covdir, str2srch = ".CNVcallsFDR")
+    allcnvcalls = pd.DataFrame()
+    for covfile in covfiles:
+        dat = pd.read_csv(covfile,sep="\t")
+        samname = re.sub(".cnvZscores.CNVcallsFDR","",os.path.basename(covfile),count=1)
+        dat_amp = dat.loc[dat["CNVcallsFDR"+str(FDR*100)]==1]
+        dat_amp_sel = dat_amp[["#chr","name"]]
+        dat_amp_sel["sample"] = samname
+        dat_amp_sel["Z"] = dat_amp["gc.corrected.norm.log.std.index.zWeighted.Final"]
+        dat_amp_sel["event"] = "amplification"
+        dat_del = dat.loc[dat["CNVcallsFDR"+str(FDR*100)]==-1]
+        dat_del_sel = dat_del[["#chr","name"]]
+        dat_del_sel["sample"] = samname
+        dat_del_sel["Z"] = dat_del["gc.corrected.norm.log.std.index.zWeighted.Final"]
+        dat_del_sel["event"] = "deletion"
+        allcnvcalls = allcnvcalls.append(dat_amp_sel)
+        allcnvcalls = allcnvcalls.append(dat_del_sel)
+    allcnvcalls.to_csv(covdir+"/allsamples.calledevents.byFDR"+str(100*FDR)+".txt",sep="\t",index=False)   
+def mergeFiles_threshold(covdir):
+    covfiles = files_in_dir(covdir, str2srch = ".CNVcallsThreshold")
+    allcnvcalls = pd.DataFrame()
+    for covfile in covfiles:
+        dat = pd.read_csv(covfile,sep="\t")
+        samname = re.sub(".cnvZscores.CNVcallsThreshold","",os.path.basename(covfile),count=1)
+        dat_amp = dat.loc[dat["CNVcalls_threshold"]==1]
+        dat_amp_sel = dat_amp[["#chr","name"]]
+        dat_amp_sel["sample"] = samname
+        dat_amp_sel["Z"] = dat_amp["gc.corrected.norm.log.std.index.zWeighted.Final"]
+        dat_amp_sel["event"] = "amplification"
+        dat_del = dat.loc[dat["CNVcalls_threshold"]==-1]
+        dat_del_sel = dat_del[["#chr","name"]]
+        dat_del_sel["sample"] = samname
+        dat_del_sel["Z"] = dat_del["gc.corrected.norm.log.std.index.zWeighted.Final"]
+        dat_del_sel["event"] = "deletion"
+        allcnvcalls = allcnvcalls.append(dat_amp_sel)
+        allcnvcalls = allcnvcalls.append(dat_del_sel)
+    allcnvcalls.to_csv(covdir+"/allsamples.calledevents.byThreshold.txt",sep="\t",index=False)   
+    
