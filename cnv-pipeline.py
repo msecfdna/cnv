@@ -93,8 +93,7 @@ def main(argv):
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of on-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_t,savename = options.normalPath1_t+"/background-ontarget-cohort1.txt",countzero=True)
         options.normalPath1_t_b = options.normalPath1_t+"/background-ontarget-cohort1.txt"
-        cov_preparation(options.normalPath1_t,options.normalPath1_t_b,numrow=5000)
-        annotate_index(options.normalPath1_t,options.annotBED,options.filterBED)
+        
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for on-target (control cohort I)")
     if options.normalPath1_w_b==None:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tCalculating: Coverage of off-target fragments for control cohort I samples")
@@ -103,8 +102,7 @@ def main(argv):
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: Coverage of off-target fragments for control cohort I samples")
         calc_bg_stats(options.normalPath1_w,savename = options.normalPath1_w+"/background-offtarget-cohort1.txt",countzero=True)
         options.normalPath1_w_b = options.normalPath1_w+"/background-offtarget-cohort1.txt"
-        cov_preparation(options.normalPath1_w,options.normalPath1_w_b,numrow=100)
-        annotate_index(options.normalPath1_w,options.annotBED,options.filterBED)
+        
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\tDone: CNV index and annotations for off-target (control cohort I)")
     ## First generate the off-target bin background
     cov_preparation(options.targetedBAM_dir,options.normalPath1_t_b,numrow=5000)
