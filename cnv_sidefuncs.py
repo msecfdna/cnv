@@ -404,17 +404,19 @@ def cov_preparation(covdir,bgfile,numrow=5000):
 def IQRV(df):
     return((df.quantile(0.75,axis=1)-df.quantile(0.25,axis=1))/df.quantile(0.5,axis=1))
 def IQRV_row(x):
-    return((np.quantile(x,0.75)-np.quantile(x,0.25))/abs(np.quantile(x,0.5)))
+    return((np.nanquantile(x,0.75)-np.nanquantile(x,0.25))/abs(np.nanquantile(x,0.5)))
 def annotate_index(covdir,annotBED,filterRgns=None):
     annot_dat = pd.read_csv(annotBED,sep="\t",names=['#chr','start','end','name'],header=0)
-    annot_dat['name2'] = annot_dat['#chr']+"_" + annot_dat['name']
+    annot_dat['name2'] = annot_dat['#chr']+"@@" + annot_dat['name']
     covfiles = files_in_dir(covdir, str2srch = ".GCcorrected.index")
     for covfile in covfiles:
         covfileTemp = covfile+".annotTemp"
         covfileannotate = covfile+".annotated"
-        command_str = "bedtools intersect -b " + covfile  + " -a " + annotBED +" -wao " + " | awk '{print $1\"\t\"$2\"\t\"$3\"\t\"$4\"\t\"$8\"\t\"$13}' " #+ covfileTemp
+        command_str = "bedtools intersect -b " + covfile  + " -a " + annotBED +" -wao " + " | awk '{print $1\"\t\"$2\"\t\"$3\"\t\"$4\"\t\"$8\"\t\"$12\"\t\"$13}' " #+ covfileTemp
         if filterRgns!=None:
-            command_str = command_str + "| bedtools intersect -a stdin -b "+filterRgns + " -c > " + covfileTemp
+            command_str = "bedtools intersect -a " + covfile  + " -b " + filterRgns +" -c " 
+           # command_str = "bedtools intersect -b " + covfile  + " -a " + annotBED +" -wao " + " | awk '{print $1\"\t\"$6\"\t\"$7\"\t\"$2\"\t\"$3\"\t\"$4\"\t\"$8\"\t\"$13}' " #+ covfileTemp
+            command_str = command_str + "| bedtools intersect -b stdin -a "+annotBED + " -wao " +" | awk '{print $1\"\t\"$2\"\t\"$3\"\t\"$4\"\t\"$8\"\t\"$12\"\t\"$13\"\t\"$14}' " + ">" + covfileTemp
         else:
             command_str = command_str + " > " + covfileTemp
         subprocess.run(command_str,shell=True)
@@ -423,22 +425,24 @@ def annotate_index(covdir,annotBED,filterRgns=None):
         # print(dat)
         dat = dat.reset_index(drop=True)
         #dat=dat.rename(columns = {0:'#chr',1:"start",2:"end",3:"name"})
-        dat['name2'] = dat.iloc[:,0] + "_" + dat.iloc[:,3]
+        dat['name2'] = dat.iloc[:,0] + "@@" + dat.iloc[:,3]
         
         dat.loc[(dat[4]=="."),4] = np.nan
         dat[4] = dat[4].astype(float)
         dat.loc[(dat[5]=="."),5] = np.nan
         if filterRgns!=None:
             dat.loc[(dat[6]==1),5] = np.nan
+            dat.loc[(dat[6]=="."),6] = np.nan
+            dat.loc[dat.iloc[:,7].isnull(),5]=np.nan
+            dat.loc[dat.iloc[:,7].isnull(),6]=np.nan
         dat[5] = dat[5].astype(float)
+        dat[6] = dat[6].astype(float)
         
-        # print("***")
-        # print(dat)
         dat_grouped = dat.groupby(by="name2").agg(np.nanmedian)
         dat_grouped2 = dat.groupby(by="name2").agg(IQRV_row)
         
-        dat_grouped['#chr'] = [x.split('_')[0] for x in dat_grouped.index]
-        dat_grouped['name'] = [x.split('_')[1] for x in dat_grouped.index]
+        dat_grouped['#chr'] = [x.split('@@')[0] for x in dat_grouped.index]
+        dat_grouped['name'] = [x.split('@@')[1] for x in dat_grouped.index]
         #print("*******")
         #print(dat_grouped)
         dat_grouped_ = pd.DataFrame({'#chr': list(dat_grouped['#chr']),
@@ -446,9 +450,10 @@ def annotate_index(covdir,annotBED,filterRgns=None):
                                      'end' : list(dat_grouped.iloc[:,1]),
                                      'name': list(dat_grouped['name']), 
                                      'gc': list(dat_grouped[4]),
-                                     'gc.corrected.norm.log.std.index':list(dat_grouped[5]),
-                                     'IQR_median': list(dat_grouped2[4])},
-                                    columns = ['#chr','start','end','name','gc','gc.corrected.norm.log.std.index','IQR_median'])
+                                     'gc.corrected.norm.log.index':list(dat_grouped[5]),
+                                     'gc.corrected.norm.log.std.index':list(dat_grouped[6]),
+                                     'IQR_median': list(dat_grouped2[5])},
+                                    columns = ['#chr','start','end','name','gc','gc.corrected.norm.log.index','gc.corrected.norm.log.std.index','IQR_median'])
         dat_grouped_.reset_index()
         #os.remove(covfileTemp)
         dat_grouped_merged = pd.merge(annot_dat,dat_grouped_,on=['#chr','start','end','name'],how = 'left')
@@ -467,7 +472,6 @@ def index2z(covdirT,covdirW,covdirT_bg,covdirW_bg,annotBED,sampleinfo=None,outdi
                                                        'gc.corrected.norm.log.std.index.std'],header=0)
     antitarget_bg = antitarget_bg.reset_index()
     annot_dat = pd.read_csv(annotBED,sep="\t",names=['#chr','start','end','name'],header=0)
-    #annot_dat['name2'] = annot_dat['#chr']+"_"+annot_dat['name']
     covfilesT = files_in_dir(covdirT, str2srch = ".GCcorrected.index.annotated")
     covfilesW = files_in_dir(covdirW, str2srch = ".GCcorrected.index.annotated")
     for covfile in covfilesW:
@@ -499,7 +503,8 @@ def index2z(covdirT,covdirW,covdirT_bg,covdirW_bg,annotBED,sampleinfo=None,outdi
             w_t_final = 1 - w_t_raw/(w_t_raw+w_w_raw)
             w_w_final = 1-w_t_final
             dat_t['gc.corrected.norm.log.std.index.z.off'] = dat_w['gc.corrected.norm.log.std.index.z']
-            
+            dat_t['gc.corrected.norm.log.index.off'] = dat_w['gc.corrected.norm.log.index']
+            dat_t['gc.corrected.norm.log.index.Final'] = (dat_t['gc.corrected.norm.log.index']+dat_t['gc.corrected.norm.log.index.off'])/2
             dat_t['gc.corrected.norm.log.std.index.stdnorm.off'] = dat_w['gc.corrected.norm.log.std.index.stdnorm']
             dat_t['gc.off'] = dat_w['gc']
             dat_t['gc.corrected.norm.log.std.index.z.Final'] = (dat_t['gc.corrected.norm.log.std.index.z.off']+dat_t['gc.corrected.norm.log.std.index.z'])/np.sqrt(2)
@@ -512,13 +517,18 @@ def index2z(covdirT,covdirW,covdirT_bg,covdirW_bg,annotBED,sampleinfo=None,outdi
             dat_t.loc[(dat_t['gc.corrected.norm.log.std.index.stdnorm.Final'].isnull()),'gc.corrected.norm.log.std.index.stdnorm.Final'] = dat_t['gc.corrected.norm.log.std.index.stdnorm.off']
             dat_t.loc[(dat_t['gc.corrected.norm.log.std.index.stdnormWeighted.Final'].isnull()),'gc.corrected.norm.log.std.index.stdnormWeighted.Final'] = dat_t['gc.corrected.norm.log.std.index.stdnorm.off']
             dat_t.loc[(dat_t['gc.corrected.norm.log.std.index.zWeighted.Final'].isnull()),'gc.corrected.norm.log.std.index.zWeighted.Final'] = dat_t['gc.corrected.norm.log.std.index.z.off']
-            
-            dat_t = dat_t.rename(columns = {'gc.corrected.norm.log.std.index.stdnorm':'gc.corrected.norm.log.std.index.stdnorm.on',
+            dat_t.loc[(dat_t['gc.corrected.norm.log.index'].isnull()),'gc.corrected.norm.log.index.Final'] = dat_t['gc.corrected.norm.log.index.off']
+            dat_t.loc[(dat_t['gc.corrected.norm.log.index.off'].isnull()),'gc.corrected.norm.log.index.Final'] = dat_t['gc.corrected.norm.log.index']
+            dat_t = dat_t.rename(columns = {'gc.corrected.norm.log.index':'gc.corrected.norm.log.index.on',
+                                            'gc.corrected.norm.log.std.index.stdnorm':'gc.corrected.norm.log.std.index.stdnorm.on',
                                             'gc.corrected.norm.log.std.index.z':'gc.corrected.norm.log.std.index.z.on',
                                             'gc':'gc.on'})
             
-            sub2save = ["#chr","start","end","name","gc.on","gc.off","gc.corrected.norm.log.std.index.stdnorm.on","gc.corrected.norm.log.std.index.z.on",
+            sub2save = ["#chr","start","end","name","gc.on","gc.off","gc.corrected.norm.log.index.on",
+                        "gc.corrected.norm.log.std.index.stdnorm.on","gc.corrected.norm.log.std.index.z.on",
+                        "gc.corrected.norm.log.index.off",
                         "gc.corrected.norm.log.std.index.stdnorm.off","gc.corrected.norm.log.std.index.z.off",
+                        "gc.corrected.norm.log.index.Final",
                         "gc.corrected.norm.log.std.index.stdnorm.Final","gc.corrected.norm.log.std.index.z.Final","Weight_on","Weight_off",
                         "gc.corrected.norm.log.std.index.stdnormWeighted.Final","gc.corrected.norm.log.std.index.zWeighted.Final"]
             dat2save = dat_t[sub2save]
